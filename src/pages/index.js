@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useContext } from 'react';
 import Head from 'next/head';
 import Image from 'next/image';
 import styles from '../styles/Home.module.css';
@@ -8,13 +8,12 @@ import Card from '@/componant/card';
 import { fetchCoffeeStore } from '../../lib/coffee-store.jsx';
 
 import useTrackLocation from '@/hooks/use-track-location';
+import { lat, limit, long, query } from '@/constant';
+import { ACTION_TYPE, StoreContext } from '@/context/storeContext';
 
 export async function getStaticProps(context) {
-  const coffeeStore = await fetchCoffeeStore('21.2249430456314', '72.82701352630217', 'coffee', 9);
-  console.log(
-    'coffeeStorecoffeeStorecoffeeStorecoffeeStorecoffeeStorecoffeeStorecoffeeStorecoffeeStorecoffeeStorecoffeeStorecoffeeStorecoffeeStorecoffeeStorecoffeeStorecoffeeStorecoffeeStorecoffeeStorecoffeeStore',
-    coffeeStore,
-  );
+  const coffeeStore = await fetchCoffeeStore(lat, long, query, limit);
+
   return {
     props: {
       coffeeStore,
@@ -23,12 +22,15 @@ export async function getStaticProps(context) {
 }
 
 export default function Home(props) {
-  const [coffeeStore, setCoffeeStore] = useState([]);
-  const { errorMessage, lat, long, handleTrackLocation, isFindingLocation } = useTrackLocation();
-  console.log(lat, long);
+  const { errorMessage, handleTrackLocation, isFindingLocation } = useTrackLocation();
+  const { state, dispatch } = useContext(StoreContext);
+  const { coffeeStore, lat, long } = state;
   useEffect(() => {
     if (lat && long) {
-      fetchCoffeeStore(lat, long, 'coffee', 9).then((coffeeStore) => setCoffeeStore(coffeeStore));
+      fetch(`./api/getCoffeeStoreByLocation?lat=${lat}&long=${long}&query=${query}&limit=${30}`).then(async (res) => {
+        const coffeeStore = await res.json();
+        dispatch({ type: ACTION_TYPE.SET_COFFEE_STORE, payload: { coffeeStore } });
+      });
     }
   }, [lat, long]);
 
